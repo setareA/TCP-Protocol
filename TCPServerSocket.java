@@ -1,5 +1,8 @@
 public abstract class TCPServerSocket {
-    public TCPServerSocket(int port) throws Exception {}
+	public int port;
+    public TCPServerSocket(int port) throws Exception {
+    	this.port = port;
+    }
 
     public abstract TCPSocket accept() throws Exception;
 
