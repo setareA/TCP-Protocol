@@ -1,6 +1,7 @@
 import java.util.Random;
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 public class TCPSocketImpl extends TCPSocket {
     public EnhancedDatagramSocket socket;
@@ -8,6 +9,7 @@ public class TCPSocketImpl extends TCPSocket {
     private int PORT;
     private int SEQ_NUM = 0;
     private int ACK_NUM = 0;
+    private int BASE = 0;
     private int SERVER_PORT = 8888;
     private State STATE = State.NONE;
     private int NumBytes = 1024;
@@ -75,8 +77,14 @@ public class TCPSocketImpl extends TCPSocket {
                         
                         this.STATE = State.ESTABLISHED;
                         this.log("State Change : ESTABLISHED");
+                        connection_completed = true;
                     }
                 }
+            }
+
+            if(this.STATE == State.ESTABLISHED){
+
+                // Do what is needed!
             }
             }catch(Exception ex){
                 System.out.println("Unknown Exception!!!!!!");
@@ -87,7 +95,12 @@ public class TCPSocketImpl extends TCPSocket {
     public void send(String pathToFile) throws Exception {
         this.log("Send Called");
         this.establishConnection();
-        this.log("Connection Stablished");
+        this.log("Start Sending...");
+
+        ArrayList<String> fileToSend = readFile(pathToFile);
+        byte[] sendDataBytes = new byte[NumBytes];
+        this.log("File Successfully read");
+        // TODO : Send File!!!
         //throw new RuntimeException("Not implemented!");
     }
 
@@ -112,4 +125,28 @@ public class TCPSocketImpl extends TCPSocket {
     public long getWindowSize() {
         throw new RuntimeException("Not implemented!");
     }
+
+    public ArrayList<String> readFile(String fileName){
+ 
+        String line = null;
+        ArrayList<String> return_val = new ArrayList<String>();
+        try {
+            FileReader fileReader = new FileReader(fileName);
+            BufferedReader bufferedReader =  new BufferedReader(fileReader);
+            while((line = bufferedReader.readLine()) != null) {
+                return_val.add(line);
+            }   
+            bufferedReader.close();  
+        }
+        catch(FileNotFoundException ex){
+                System.out.println("Unable to open file '" + fileName + "'");                
+            }
+        catch(IOException ex){
+            System.out.println(
+                "Error reading file '"  + fileName + "'");                  
+            }
+
+        return return_val;
+        }
+
 }
