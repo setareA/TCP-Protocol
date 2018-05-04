@@ -7,13 +7,13 @@ public class TCPServerSocketImpl extends TCPServerSocket {
 	private static int ACK_NUM = 0;
 	private static int SEQ_NUM = 0;
 	private static int PORT;
+	private int NumBytes = 1024;
 	private static State STATE = State.NONE;
 	private static boolean servingClient = false;  //Blocking 
 
     public TCPServerSocketImpl(int port) throws Exception {
         super(port);
         this.PORT = port;
-        this.ACK_NUM = 0;
         this.socket = new EnhancedDatagramSocket(this.PORT);
         this.log("TCP: New socket created.");
     }
@@ -21,7 +21,7 @@ public class TCPServerSocketImpl extends TCPServerSocket {
     @Override
     public TCPSocket accept() throws Exception {
         System.out.println("Accept");
-        byte[] receivedData= new byte[1024];
+        byte[] receivedData= new byte[NumBytes];
         while(!servingClient){
 	        DatagramPacket receivedPacket = new DatagramPacket(receivedData, receivedData.length);
 	        this.socket.receive(receivedPacket);
@@ -31,15 +31,16 @@ public class TCPServerSocketImpl extends TCPServerSocket {
 	        System.out.println("khar" + client_port);
 	        System.out.println("TCP Received : " + receivedData);
 	        String[] receivedSplited = receivedString.split("\\s+");
+	        int receivedAckNum = Integer.parseInt(receivedSplited[2]);
 	        ///////
-	        // TODO int receivedAckNum = ???
+	        
 	        if(this.STATE == State.NONE){
 	        	if(receivedSplited[0].equals("SYN")){ //first packet must be a SYN packet
 								this.log("3-way handshaking 1/3");
 								String ACK_NUM_Str = Integer.toString(this.ACK_NUM);
 								String SEQ_NUM_Str = Integer.toString(this.SEQ_NUM);
 								String sendDataStr = "SYN-ACK" + " " + SEQ_NUM_Str + " "+ ACK_NUM_Str;
-								byte[] sendDataBytes = new byte[1024];
+								byte[] sendDataBytes = new byte[NumBytes];
 								sendDataBytes = sendDataStr.getBytes();
 
 								DatagramPacket sendPacket = new DatagramPacket(sendDataBytes, sendDataBytes.length, client_ip, client_port);

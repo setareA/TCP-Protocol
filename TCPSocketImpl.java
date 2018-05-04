@@ -56,7 +56,7 @@ public class TCPSocketImpl extends TCPSocket {
                 int receivedAckNum = Integer.parseInt(received_splited[2]);
 
                 if(this.STATE == State.SYN_SEND){
-                    if(receivedAckNum == this.SEQ_NUM + 1 && received_splited[0].equals("SYN-ACK")){
+                    if(receivedAckNum == this.SEQ_NUM + 1 /*&& received_splited[0].equals("SYN-ACK")*/){
                         this.log("3-way handshake 2/3");
 
                         this.SEQ_NUM = receivedAckNum;
