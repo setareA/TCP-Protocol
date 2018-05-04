@@ -37,6 +37,8 @@ public class TCPSocketImpl extends TCPSocket {
             String ACK_NUM_Str = Integer.toString(this.ACK_NUM);
             String SendData_Str="SYN" + " "+ SEQ_NUM_Str + " " + ACK_NUM_Str;
             sendDataBytes = SendData_Str.getBytes();
+            this.log("Sending" + SendData_Str);
+            System.out.println("Here");
             DatagramPacket sendPacket = new DatagramPacket(sendDataBytes, sendDataBytes.length,ip_addr, SERVER_PORT);
             this.socket.send(sendPacket);
             this.STATE = State.SYN_SEND;
@@ -52,11 +54,13 @@ public class TCPSocketImpl extends TCPSocket {
                 this.log("Received_Data "+ receivedStr);
                 
                 String[] received_splited = receivedStr.split("\\s+");
-                int receivedSeqNum = Integer.parseInt(received_splited[1]);
-                int receivedAckNum = Integer.parseInt(received_splited[2]);
+                int receivedSeqNum = Integer.parseInt(received_splited[1].trim());
+                int receivedAckNum = Integer.parseInt(received_splited[2].trim());
+                //System.out.println(receivedAckNum);
+                //System.out.println(receivedSeqNum);
 
                 if(this.STATE == State.SYN_SEND){
-                    if(receivedAckNum == this.SEQ_NUM + 1 /*&& received_splited[0].equals("SYN-ACK")*/){
+                    if(receivedAckNum == this.SEQ_NUM + 1 && received_splited[0].equals("SYN-ACK")){
                         this.log("3-way handshake 2/3");
 
                         this.SEQ_NUM = receivedAckNum;
@@ -83,12 +87,14 @@ public class TCPSocketImpl extends TCPSocket {
     public void send(String pathToFile) throws Exception {
         this.log("Send Called");
         this.establishConnection();
+        this.log("Connection Stablished");
         //throw new RuntimeException("Not implemented!");
     }
 
     @Override
     public void receive(String pathToFile) throws Exception {
-        throw new RuntimeException("Not implemented!");
+
+        this.log("Receive called");
     }
 
     @Override

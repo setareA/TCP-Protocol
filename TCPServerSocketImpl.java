@@ -28,15 +28,20 @@ public class TCPServerSocketImpl extends TCPServerSocket {
 	        String receivedString = new String(receivedPacket.getData());
 	        InetAddress client_ip = receivedPacket.getAddress();
 	        int client_port = receivedPacket.getPort();
-	        System.out.println("khar" + client_port);
-	        System.out.println("TCP Received : " + receivedData);
+	        System.out.println("Client port : " + client_port);
+	        System.out.println("TCP Received : " + receivedString);
 	        String[] receivedSplited = receivedString.split("\\s+");
-	        int receivedAckNum = Integer.parseInt(receivedSplited[2]);
+	        System.out.println("After Parse");
+	        System.out.println(receivedSplited[2]);
+	        int receivedAckNum = Integer.parseInt(receivedSplited[2].trim());
+	        int receivedSeqNum = Integer.parseInt(receivedSplited[1].trim());
+	        //System.out.println("yoohoooo");
 	        ///////
 	        
 	        if(this.STATE == State.NONE){
 	        	if(receivedSplited[0].equals("SYN")){ //first packet must be a SYN packet
 								this.log("3-way handshaking 1/3");
+								this.ACK_NUM = receivedSeqNum + 1;
 								String ACK_NUM_Str = Integer.toString(this.ACK_NUM);
 								String SEQ_NUM_Str = Integer.toString(this.SEQ_NUM);
 								String sendDataStr = "SYN-ACK" + " " + SEQ_NUM_Str + " "+ ACK_NUM_Str;
@@ -51,8 +56,9 @@ public class TCPServerSocketImpl extends TCPServerSocket {
 							}
 	        }
 	        else if(this.STATE == State.SYN_RECV){
-
-	        	if(receivedSplited.equals("ACK") && (receivedAckNum == (this.SEQ_NUM + 1))){
+	        	//System.out.println(this.SEQ_NUM + 1);
+	        	//System.out.println(receivedAckNum);
+	        	if(receivedSplited[0].equals("ACK") && (receivedAckNum == (this.SEQ_NUM + 1))){
 	        		this.STATE = State.ESTABLISHED;
 	        		servingClient = true;
 	        		this.log("State Change : ESTABLISHED");
