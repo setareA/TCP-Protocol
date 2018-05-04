@@ -1,12 +1,16 @@
 import java.util.Random;
 import java.io.*;
+import java.net.*;
 
 public class TCPSocketImpl extends TCPSocket {
     public EnhancedDatagramSocket socket;
     private String IP;
     private int PORT;
-    private int SEQ_NO;
-    private int ACK_NO;
+    private int SEQ_NUM = 0;
+    private int ACK_NUM = 0;
+    private int SERVER_PORT = 8888;
+    private State STATE = State.NONE;
+    private int NumBytes = 1024;
 
     public TCPSocketImpl(String ip, int port) throws Exception {
         super(ip, port);
@@ -14,9 +18,8 @@ public class TCPSocketImpl extends TCPSocket {
         System.out.println(port);
         this.IP = ip;
         this.PORT = port;
-        this.SEQ_NUM = 0;
-        this.ACK_NUM = 0;
         this.socket= new EnhancedDatagramSocket(this.PORT);
+        this.log("Socket Created");
 
     }
 
@@ -24,9 +27,63 @@ public class TCPSocketImpl extends TCPSocket {
         System.out.println("TCPSocketImpl : " + log_Data);
     }
 
+    public void establishConnection(){
+
+        try{
+            this.log("Handshaking 0/3");
+            InetAddress ip_addr = InetAddress.getByName(this.IP);
+            byte[] sendDataBytes = new byte[NumBytes];
+            String SEQ_NUM_Str= Integer.toString(this.SEQ_NUM);
+            String ACK_NUM_Str = Integer.toString(this.ACK_NUM);
+            String SendData_Str="SYN" + " "+ SEQ_NUM_Str + " " + ACK_NUM_Str;
+            sendDataBytes = SendData_Str.getBytes();
+            DatagramPacket sendPacket = new DatagramPacket(sendDataBytes, sendDataBytes.length,ip_addr, SERVER_PORT);
+            this.socket.send(sendPacket);
+            this.STATE = State.SYN_SEND;
+            this.log("State Change : SYN_SEND");
+
+            boolean connection_completed = false;
+            while(connection_completed == false){
+
+                byte[] receivedData = new byte[NumBytes];
+                DatagramPacket receivedPacket = new DatagramPacket(receivedData, receivedData.length);
+                this.socket.receive(receivedPacket);
+                String receivedStr = new String(receivedPacket.getData());
+                this.log("Received_Data "+ receivedStr);
+                
+                String[] received_splited = receivedStr.split("\\s+");
+                int receivedSeqNum = Integer.parseInt(received_splited[1]);
+                int receivedAckNum = Integer.parseInt(received_splited[2]);
+
+                if(this.STATE == State.SYN_SEND){
+                    if(receivedAckNum == this.SEQ_NUM + 1 && received_splited[0].equals("SYN-ACK")){
+                        this.log("3-way handshake 2/3");
+
+                        this.SEQ_NUM = receivedAckNum;
+                        this.ACK_NUM = receivedSeqNum + 1;
+                        String SeqNumStr = Integer.toString(this.SEQ_NUM);
+                        String AckNumStr = Integer.toString(this.ACK_NUM);
+                        String sendDataStr = "ACK" + " " + SeqNumStr +" "+ AckNumStr;
+                        sendDataBytes = sendDataStr.getBytes();
+                        
+                        sendPacket = new DatagramPacket(sendDataBytes, sendDataBytes.length, ip_addr, this.SERVER_PORT);
+                        this.socket.send(sendPacket);
+                        
+                        this.STATE = State.ESTABLISHED;
+                        this.log("State Change : ESTABLISHED");
+                    }
+                }
+            }
+            }catch(Exception ex){
+                System.out.println("Unknown Exception!!!!!!");
+            }
+    }
+
     @Override
     public void send(String pathToFile) throws Exception {
-        throw new RuntimeException("Not implemented!");
+        this.log("Send Called");
+        this.establishConnection();
+        //throw new RuntimeException("Not implemented!");
     }
 
     @Override
