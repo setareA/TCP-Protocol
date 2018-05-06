@@ -344,6 +344,15 @@ public class TCPSocketImpl extends TCPSocket {
     }
 
     public void sendData(byte[] sendDataBytes){
+    int numPackets = (int) Math.ceil( (double) sendDataBytes.length / MSS);
+        while( (rcvBase - firstUnAcked) < WINDOW_SIZE) {
+            
+          if ( rcvBase < numPackets) {
+              byte[] filePacketBytes = new byte[MSS];
+              filePacketBytes = Arrays.copyOfRange(sendDataBytes, rcvBase*MSS, rcvBase*MSS + MSS);
+           }
+        
+        }
         
     }
 
