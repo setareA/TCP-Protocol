@@ -333,27 +333,48 @@ public class TCPSocketImpl extends TCPSocket {
         }
     }
 
-    public static byte[] hexStringToByteArray(String s) {
-        int len = s.length();
-        byte[] data = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                             + Character.digit(s.charAt(i+1), 16));
-        }
-    return data;
-    }
-
-    public void sendData(byte[] sendDataBytes){
-    int numPackets = (int) Math.ceil( (double) sendDataBytes.length / MSS);
-        while( (rcvBase - firstUnAcked) < WINDOW_SIZE) {
+public void sendData(byte[] sendDataBytes) throws IOException{
+        
+        // List of all the packets sent
+         ArrayList<DatagramPacket> sentPackets = new ArrayList<DatagramPacket>();
+                
+        InetAddress ip_addr;
+        try {
+            ip_addr = InetAddress.getByName(this.IP);
+        
+            int numPackets = (int) Math.ceil( (double) sendDataBytes.length / MSS);
+            while( (rcvBase - firstUnAcked) < WINDOW_SIZE) {
             
-          if ( rcvBase < numPackets) {
-              byte[] filePacketBytes = new byte[MSS];
-              filePacketBytes = Arrays.copyOfRange(sendDataBytes, rcvBase*MSS, rcvBase*MSS + MSS);
+             if ( rcvBase < numPackets) {
+                 byte[] filePacketBytes = new byte[MSS];
+                 filePacketBytes = Arrays.copyOfRange(sendDataBytes, rcvBase*MSS, rcvBase*MSS + MSS);
+              
+            
+                 String SEQ_NUM = Integer.toString(rcvBase);
+                 String SendData_Str="SEQ" + " "+ SEQ_NUM ;
+              
+              
+                 byte[] combined = new byte[filePacketBytes.length + SendData_Str.getBytes().length];
+                 System.arraycopy(filePacketBytes,0,combined,0         ,filePacketBytes.length);
+                 System.arraycopy(SendData_Str.getBytes(),0,combined,filePacketBytes.length,SendData_Str.getBytes().length);
+                 this.log("Sending" + combined.toString());
+              
+                 // serialize data ?
+                 
+                 DatagramPacket sendPacket = new DatagramPacket(combined, combined.length,ip_addr, SERVER_PORT);
+                 sentPackets.add(sendPacket);
+                 
+                 // send with possibility?
+                 this.socket.send(sendPacket);
+                 
+                 rcvBase++;
            }
         
+         }
         }
-        
+        catch (UnknownHostException ex) {
+            Logger.getLogger(TCPSocketImpl.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
 }
