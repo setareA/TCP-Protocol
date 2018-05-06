@@ -4,6 +4,8 @@ import java.net.*;
 import java.util.*;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.nio.file.*;
 
 
@@ -25,7 +27,6 @@ public class TCPSocketImpl extends TCPSocket {
     private int TIMER = 30;
     private int rcvBase = 0;
     private int firstUnAcked = 0;
-
 
     public TCPSocketImpl(String ip, int port) throws Exception {
         super(ip, port);
@@ -180,35 +181,6 @@ public class TCPSocketImpl extends TCPSocket {
         return data;
     }
 
-    public void writeFile(String fileName, ArrayList<String> dataToWrite){
-
-        BufferedWriter bw = null;
-        FileWriter fw = null;
-
-        try {
-            String content = "This is the content to write into file\n";
-            fw = new FileWriter(fileName);
-            bw = new BufferedWriter(fw);
-            for(int i = 0; i < dataToWrite.size(); i++){
-                bw.write(dataToWrite.get(i));
-            }
-            //bw.write(content);
-        } catch (IOException e){
-            e.printStackTrace();
-        } finally {
-            try {
-                if (bw != null)
-                    bw.close();
-
-                if (fw != null)
-                    fw.close();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-
-        }
-    }
-
     public static byte[] hexStringToByteArray(String s) {
         int len = s.length();
         byte[] data = new byte[len / 2];
@@ -218,92 +190,7 @@ public class TCPSocketImpl extends TCPSocket {
         }
     return data;
     }
-
-    public void sendData(byte[] sendDataBytes){
-        int numPackets = (int) Math.ceil( (double) sendDataBytes.length / MSS);
-        while( (rcvBase - firstUnAcked) < WINDOW_SIZE) {
-            
-          if ( rcvBase < numPackets) {
-              byte[] filePacketBytes = new byte[MSS];
-              filePacketBytes = Arrays.copyOfRange(sendDataBytes, rcvBase*MSS, rcvBase*MSS + MSS);
-           }
-        
-        }
-    }
-
-}
-                System.out.println("Unknown Exception!!!!!!");
-            }
-    }
-
-    @Override
-    public void send(String pathToFile) throws Exception {
-        this.log("Send Called");
-        this.establishConnection();
-        this.log("Start Sending...");
-
-        byte[]  fileToSend = readFile(pathToFile);
-        //System.out.println("kharoo");
-        System.out.println(fileToSend.length);
-        this.sendData(fileToSend);
-        byte[] sendDataBytes = new byte[NumBytes];
-        this.log("File Successfully read");
-
-        // TODO : Send File!!!
-
-        //throw new RuntimeException("Not implemented!");
-    }
-
-    @Override
-    public void receive(String pathToFile) throws Exception {
-
-        this.log("Receive called");
-    }
-
-    @Override
-    public void close() throws Exception {
-        this.socket.close();
-        //throw new RuntimeException("Not implemented!");
-    }
-    public void ssToCaSetter(){
-
-        this.ssThresh = cwnd / 2;
-        this.cwnd = 1;
-    }
-
-    public void ssAckEventSetter(){
-        cwnd = cwnd * 2;
-    }
-
-    public void caAckEventSetter(){
-        cwnd = cwnd + MSS*(MSS/cwnd);
-    }
-
-    @Override
-    public long getSSThreshold() {
-        return this.ssThresh;
-    }
-
-    @Override
-    public long getWindowSize() {
-        return this.cwnd;
-    }
-
-    public byte[] readFile(String fileName){
-
-        Path fileLocation;
-        byte[] data = hexStringToByteArray("e04fd020ea3a6910a2d808002b30309d");
-        try{
-           
-            fileLocation = Paths.get(fileName);
-            data = Files.readAllBytes(fileLocation);
-            //System.out.println(data.length);
-        }catch(IOException ex){
-            this.log("IO Exception in readFile");
-        }
-        return data;
-    }
-
+ 
     public void writeFile(String fileName, ArrayList<String> dataToWrite){
 
         BufferedWriter bw = null;
@@ -376,5 +263,4 @@ public void sendData(byte[] sendDataBytes) throws IOException{
             Logger.getLogger(TCPSocketImpl.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-
 }
