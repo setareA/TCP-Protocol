@@ -4,6 +4,8 @@ import java.net.*;
 import java.util.*;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.nio.file.*;
+
 
 public class TCPSocketImpl extends TCPSocket {
     public EnhancedDatagramSocket socket;
@@ -30,6 +32,10 @@ public class TCPSocketImpl extends TCPSocket {
         this.cngsState = CngsState.SLOW_START;
         this.socket= new EnhancedDatagramSocket(this.PORT);
         this.log("Socket Created");
+        // Congestion Control Initial Values
+        cwnd = MSS ;
+        ssThresh =  65536 ;
+
 
     }
 
@@ -105,12 +111,13 @@ public class TCPSocketImpl extends TCPSocket {
         this.establishConnection();
         this.log("Start Sending...");
 
-        ArrayList<String> fileToSend = readFile(pathToFile);
+        byte[]  fileToSend = readFile(pathToFile);
+        //System.out.println("kharoo");
+        System.out.println(fileToSend.length);
         byte[] sendDataBytes = new byte[NumBytes];
         this.log("File Successfully read");
 
         // TODO : Send File!!!
-        int numOfDupAcks = 0;
 
         //throw new RuntimeException("Not implemented!");
     }
@@ -150,29 +157,21 @@ public class TCPSocketImpl extends TCPSocket {
         return this.cwnd;
     }
 
-    public ArrayList<String> readFile(String fileName){
- 
-        String line = null;
-        ArrayList<String> return_val = new ArrayList<String>();
-        try {
-            FileReader fileReader = new FileReader(fileName);
-            BufferedReader bufferedReader =  new BufferedReader(fileReader);
-            while((line = bufferedReader.readLine()) != null) {
-                return_val.add(line);
-            }   
-            bufferedReader.close();  
-        }
-        catch(FileNotFoundException ex){
-                System.out.println("Unable to open file '" + fileName + "'");                
-            }
-        catch(IOException ex){
-            System.out.println(
-                "Error reading file '"  + fileName + "'");                  
-            }
+    public byte[] readFile(String fileName){
 
-        return return_val;
+        Path fileLocation;
+        byte[] data = hexStringToByteArray("e04fd020ea3a6910a2d808002b30309d");
+        try{
+           
+            fileLocation = Paths.get(fileName);
+            data = Files.readAllBytes(fileLocation);
+            //System.out.println(data.length);
+        }catch(IOException ex){
+            this.log("IO Exception in readFile");
         }
-        
+        return data;
+    }
+
     public void writeFile(String fileName, ArrayList<String> dataToWrite){
 
         BufferedWriter bw = null;
@@ -201,4 +200,15 @@ public class TCPSocketImpl extends TCPSocket {
 
         }
     }
+
+    public static byte[] hexStringToByteArray(String s) {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                             + Character.digit(s.charAt(i+1), 16));
+        }
+    return data;
+    }
+
 }
