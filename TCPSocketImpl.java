@@ -135,16 +135,19 @@ public class TCPSocketImpl extends TCPSocket {
     }
     public void ssToCaSetter(){
 
-        this.ssThresh = cwnd / 2;
+        this.ssThresh = this.cwnd / 2;
         this.cwnd = 1;
+        onWindowChange();
     }
 
     public void ssAckEventSetter(){
-        cwnd = cwnd * 2;
+        this.cwnd = this.cwnd * 2;
+        onWindowChange();
     }
 
     public void caAckEventSetter(){
-        cwnd = cwnd + MSS*(MSS/cwnd);
+        this.cwnd = this.cwnd + MSS*(MSS/cwnd);
+        onWindowChange();
     }
 
     @Override
