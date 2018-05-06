@@ -172,4 +172,33 @@ public class TCPSocketImpl extends TCPSocket {
 
         return return_val;
         }
+        
+    public void writeFile(String fileName, ArrayList<String> dataToWrite){
+
+        BufferedWriter bw = null;
+        FileWriter fw = null;
+
+        try {
+            String content = "This is the content to write into file\n";
+            fw = new FileWriter(fileName);
+            bw = new BufferedWriter(fw);
+            for(int i = 0; i < dataToWrite.size(); i++){
+                bw.write(dataToWrite.get(i));
+            }
+            //bw.write(content);
+        } catch (IOException e){
+            e.printStackTrace();
+        } finally {
+            try {
+                if (bw != null)
+                    bw.close();
+
+                if (fw != null)
+                    fw.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+
+        }
+    }
 }
