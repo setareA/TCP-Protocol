@@ -20,13 +20,19 @@ public class TCPSocketImpl extends TCPSocket {
     private State STATE = State.NONE;
     private CngsState cngsState = CngsState.NONE;
     private int NumBytes = 1024;
+    /* Congestion Control Variables */
     private int cwnd = 0;
     private int ssThresh = 0;
+    private int lastAcked = 0;
+    private int lastSent = 0;
+    private int dupAckCount = 0;
+    /* End */
     private int MSS = 1024;
     private int WINDOW_SIZE = 4;
     private int TIMER = 30;
     private int rcvBase = 0;
     private int firstUnAcked = 0;
+
 
     public TCPSocketImpl(String ip, int port) throws Exception {
         super(ip, port);
@@ -154,6 +160,21 @@ public class TCPSocketImpl extends TCPSocket {
     public void caAckEventSetter(){
         this.cwnd = this.cwnd + MSS*(MSS/cwnd);
         onWindowChange();
+    }
+
+    private void incIfDuplicateAck(int ackNum){
+        if(ackNum == this.lastAcked)
+            dupAckCount++;
+    }
+
+    private boolean tripleDuplicateAck(){
+        if(dupAckCount >= 3)
+            return true;
+        return false;
+    }
+
+    private void resetDupAckCount(){
+        this.dupAckCount = 0;
     }
 
     @Override
