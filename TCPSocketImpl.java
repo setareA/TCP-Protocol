@@ -2,6 +2,8 @@ import java.util.Random;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class TCPSocketImpl extends TCPSocket {
     public EnhancedDatagramSocket socket;
@@ -12,7 +14,12 @@ public class TCPSocketImpl extends TCPSocket {
     private int BASE = 0;
     private int SERVER_PORT = 8888;
     private State STATE = State.NONE;
+    private CngsState cngsState = CngsState.NONE;
     private int NumBytes = 1024;
+    private int cwnd = 0;
+    private int ssThresh = 0;
+    private int MSS = 1024;
+
 
     public TCPSocketImpl(String ip, int port) throws Exception {
         super(ip, port);
@@ -20,6 +27,7 @@ public class TCPSocketImpl extends TCPSocket {
         System.out.println(port);
         this.IP = ip;
         this.PORT = port;
+        this.cngsState = CngsState.SLOW_START;
         this.socket= new EnhancedDatagramSocket(this.PORT);
         this.log("Socket Created");
 
@@ -84,7 +92,7 @@ public class TCPSocketImpl extends TCPSocket {
 
             if(this.STATE == State.ESTABLISHED){
 
-                // Do what is needed!
+                return;
             }
             }catch(Exception ex){
                 System.out.println("Unknown Exception!!!!!!");
@@ -100,7 +108,10 @@ public class TCPSocketImpl extends TCPSocket {
         ArrayList<String> fileToSend = readFile(pathToFile);
         byte[] sendDataBytes = new byte[NumBytes];
         this.log("File Successfully read");
+
         // TODO : Send File!!!
+        int numOfDupAcks = 0;
+
         //throw new RuntimeException("Not implemented!");
     }
 
@@ -115,15 +126,28 @@ public class TCPSocketImpl extends TCPSocket {
         this.socket.close();
         //throw new RuntimeException("Not implemented!");
     }
+    public void ssToCaSetter(){
+
+        this.ssThresh = cwnd / 2;
+        this.cwnd = 1;
+    }
+
+    public void ssAckEventSetter(){
+        cwnd = cwnd * 2;
+    }
+
+    public void caAckEventSetter(){
+        cwnd = cwnd + MSS*(MSS/cwnd);
+    }
 
     @Override
     public long getSSThreshold() {
-        throw new RuntimeException("Not implemented!");
+        return this.ssThresh;
     }
 
     @Override
     public long getWindowSize() {
-        throw new RuntimeException("Not implemented!");
+        return this.cwnd;
     }
 
     public ArrayList<String> readFile(String fileName){
@@ -148,5 +172,4 @@ public class TCPSocketImpl extends TCPSocket {
 
         return return_val;
         }
-
 }
