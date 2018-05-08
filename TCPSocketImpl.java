@@ -121,15 +121,8 @@ public class TCPSocketImpl extends TCPSocket {
         this.log("Start Sending...");
 
         byte[]  fileToSend = readFile(pathToFile);
-        //System.out.println("kharoo");
         System.out.println(fileToSend.length);
         this.sendData(fileToSend);
-        //byte[] sendDataBytes = new byte[NumBytes];
-        this.log("File Successfully read");
-
-        // TODO : Send File!!!
-
-        //throw new RuntimeException("Not implemented!");
     }
 
     @Override
@@ -137,11 +130,11 @@ public class TCPSocketImpl extends TCPSocket {
 
         int waitingFor = 0;
         ArrayList<String> received = new ArrayList<String>();
-        boolean end = false;
+        //boolean end = false;
         InetAddress ip_addr = InetAddress.getByName(this.IP);
         byte[] receivedData = new byte[NumBytes];
         
-        while(!end){
+        while(true){
             
             this.log("Waiting for packet");
             // Receive packet
@@ -150,7 +143,7 @@ public class TCPSocketImpl extends TCPSocket {
             this.log("received a packet in receive");
             
             String receivedStr = new String(receivedPacket.getData());
-            this.log("Received_Data "+ receivedStr);
+            //this.log("Received_Data "+ receivedStr);
 
             
                 
@@ -158,7 +151,7 @@ public class TCPSocketImpl extends TCPSocket {
 
             if(received_splited[0].equals("END")){
                 this.log("Last packet received");
-                end = true;
+                break;
             }
             int receivedSeqNum = Integer.parseInt(received_splited[1].trim());
 
@@ -169,7 +162,7 @@ public class TCPSocketImpl extends TCPSocket {
             if(receivedSeqNum == waitingFor){
                 waitingFor++;
                 received.add(data);
-                System.out.println("Packed stored in buffer");
+                //System.out.println("Packed stored in buffer");
             }else{
                 System.out.println("Packet discarded (not in order)");
             }
@@ -187,14 +180,14 @@ public class TCPSocketImpl extends TCPSocket {
                 System.out.println("[X] Lost ack with sequence number " + waitingFor);
             }
             
-            System.out.println("Sending ACK to seq " + waitingFor + " with " + sendDataBytes.length  + " bytes");
+            //System.out.println("Sending ACK to seq " + waitingFor + " with " + sendDataBytes.length  + " bytes");
             
         }
         
-        this.log("writing to receiving.mp3");
+        this.log("writing to  file.");
         
         // Write to file!!!
-        writeFile("receving.mp3", received);
+        writeFile(pathToFile, received);
     }
 
     @Override
@@ -390,6 +383,7 @@ public void sendData(byte[] sendDataBytes) throws IOException{
             String endStr = "END";
             byte[] endBytes = endStr.getBytes();
             DatagramPacket sendPacket = new DatagramPacket(endBytes, endBytes.length, ip_addr, SERVER_PORT_2);
+            this.socket.send(sendPacket);
             this.log("Finished transmission");
         } 
 }

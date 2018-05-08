@@ -5,7 +5,7 @@ public class Receiver {
     public static void main(String[] args) throws Exception {
         TCPServerSocket tcpServerSocket = new TCPServerSocketImpl(1239);
         TCPSocket tcpSocket = tcpServerSocket.accept();
-        tcpSocket.receive("receiving.mp3");
+        tcpSocket.receive("test1.txt");
         tcpSocket.close();
         tcpServerSocket.close();
     }
