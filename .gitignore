@@ -1,5 +1,5 @@
 *.class
-*.pdf
+#*.pdf
 *.html
 *.txt
 *.ppt

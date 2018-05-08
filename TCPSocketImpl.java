@@ -15,8 +15,8 @@ public class TCPSocketImpl extends TCPSocket {
     private int PORT;
     private int SEQ_NUM = 0;
     private int ACK_NUM = 0;
-    private int BASE = 0;
-    private int SERVER_PORT = 8888;
+    private int SERVER_PORT = 1239;
+    private int SERVER_PORT_2 = 1236;
     private State STATE = State.NONE;
     private CngsState cngsState = CngsState.NONE;
     private int NumBytes = 1024;
@@ -24,14 +24,14 @@ public class TCPSocketImpl extends TCPSocket {
     private int cwnd = 0;
     private int ssThresh = 0;
     private int lastAcked = 0;
-    private int lastSent = 0;
     private int dupAckCount = 0;
     /* End */
     private int MSS = 1024;
-    private int WINDOW_SIZE = 4;
-    private int TIMER = 30;
+    private int WINDOW_SIZE = 50;
+    private int TIMER = 100;
     private int rcvBase = 0;
     private int firstUnAcked = 0;
+    public static final double PROBABILITY  = 0.1;
 
 
     public TCPSocketImpl(String ip, int port) throws Exception {
@@ -46,8 +46,6 @@ public class TCPSocketImpl extends TCPSocket {
         // Congestion Control Initial Values
         cwnd = MSS ;
         ssThresh =  65536 ;
-
-
     }
 
     public void log(String log_Data){
@@ -126,7 +124,7 @@ public class TCPSocketImpl extends TCPSocket {
         //System.out.println("kharoo");
         System.out.println(fileToSend.length);
         this.sendData(fileToSend);
-        byte[] sendDataBytes = new byte[NumBytes];
+        //byte[] sendDataBytes = new byte[NumBytes];
         this.log("File Successfully read");
 
         // TODO : Send File!!!
@@ -137,7 +135,66 @@ public class TCPSocketImpl extends TCPSocket {
     @Override
     public void receive(String pathToFile) throws Exception {
 
-        this.log("Receive called");
+        int waitingFor = 0;
+        ArrayList<String> received = new ArrayList<String>();
+        boolean end = false;
+        InetAddress ip_addr = InetAddress.getByName(this.IP);
+        byte[] receivedData = new byte[NumBytes];
+        
+        while(!end){
+            
+            this.log("Waiting for packet");
+            // Receive packet
+            DatagramPacket receivedPacket = new DatagramPacket(receivedData, receivedData.length);
+            this.socket.receive(receivedPacket);
+            this.log("received a packet in receive");
+            
+            String receivedStr = new String(receivedPacket.getData());
+            this.log("Received_Data "+ receivedStr);
+
+            
+                
+            String[] received_splited = receivedStr.split("\\s+");
+
+            if(received_splited[0].equals("END")){
+                this.log("Last packet received");
+                end = true;
+            }
+            int receivedSeqNum = Integer.parseInt(received_splited[1].trim());
+
+            String data = received_splited[2].trim();
+            
+            System.out.println("Packet with sequence number " + receivedSeqNum + " received.");
+        
+            if(receivedSeqNum == waitingFor){
+                waitingFor++;
+                received.add(data);
+                System.out.println("Packed stored in buffer");
+            }else{
+                System.out.println("Packet discarded (not in order)");
+            }
+            
+            // Create an RDTAck object
+            String ackStr = "ACK" + " " + waitingFor;
+            byte[] sendDataBytes = ackStr.getBytes();
+            
+            DatagramPacket ackPacket = new DatagramPacket(sendDataBytes, sendDataBytes.length, ip_addr, 8088);
+            
+            // Send with some probability of loss
+            if(Math.random() > PROBABILITY){
+                this.socket.send(ackPacket);
+            }else{
+                System.out.println("[X] Lost ack with sequence number " + waitingFor);
+            }
+            
+            System.out.println("Sending ACK to seq " + waitingFor + " with " + sendDataBytes.length  + " bytes");
+            
+        }
+        
+        this.log("writing to receiving.mp3");
+        
+        // Write to file!!!
+        writeFile("receving.mp3", received);
     }
 
     @Override
@@ -199,6 +256,7 @@ public class TCPSocketImpl extends TCPSocket {
         }catch(IOException ex){
             this.log("IO Exception in readFile");
         }
+        this.log("File successfully read");
         return data;
     }
 
@@ -244,44 +302,94 @@ public class TCPSocketImpl extends TCPSocket {
 public void sendData(byte[] sendDataBytes) throws IOException{
         
         // List of all the packets sent
-         ArrayList<DatagramPacket> sentPackets = new ArrayList<DatagramPacket>();
+         ArrayList<byte[]> sentPackets = new ArrayList<byte[]>();
                 
         InetAddress ip_addr;
-        try {
+        //try {
             ip_addr = InetAddress.getByName(this.IP);
         
             int numPackets = (int) Math.ceil( (double) sendDataBytes.length / MSS);
-            while( (rcvBase - firstUnAcked) < WINDOW_SIZE) {
+            this.log("Number of packets to send = " +  Integer.toString(numPackets));
             
-             if ( rcvBase < numPackets) {
-                 byte[] filePacketBytes = new byte[MSS];
-                 filePacketBytes = Arrays.copyOfRange(sendDataBytes, rcvBase*MSS, rcvBase*MSS + MSS);
-              
-            
-                 String SEQ_NUM = Integer.toString(rcvBase);
-                 String SendData_Str="SEQ" + " "+ SEQ_NUM ;
-              
-              
-                 byte[] combined = new byte[filePacketBytes.length + SendData_Str.getBytes().length];
-                 System.arraycopy(filePacketBytes,0,combined,0         ,filePacketBytes.length);
-                 System.arraycopy(SendData_Str.getBytes(),0,combined,filePacketBytes.length,SendData_Str.getBytes().length);
-                 this.log("Sending" + combined.toString());
-              
-                 // serialize data ?
-                 
-                 DatagramPacket sendPacket = new DatagramPacket(combined, combined.length,ip_addr, SERVER_PORT);
-                 sentPackets.add(sendPacket);
-                 
-                 // send with possibility?
-                 this.socket.send(sendPacket);
-                 
-                 rcvBase++;
-           }
-        
-         }
-        }
-        catch (UnknownHostException ex) {
-            Logger.getLogger(TCPSocketImpl.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
+            while(true){
+                this.log("here");
+                while( (rcvBase - firstUnAcked) < WINDOW_SIZE && ( rcvBase < numPackets) ) {
+                    System.out.println("kkkkk");
+                    if ( rcvBase < numPackets) {
+                        byte[] filePacketBytes = new byte[MSS];
+                        filePacketBytes = Arrays.copyOfRange(sendDataBytes, rcvBase * MSS, rcvBase * MSS + MSS);
+                  
+                        String SEQ_NUM = Integer.toString(rcvBase);
+                        String SendData_Str="SEQ" + " "+ SEQ_NUM + " ";
+                        System.out.println("Sending SEQ" + SEQ_NUM);
+                        byte[] combined = new byte[filePacketBytes.length + SendData_Str.getBytes().length];
+                        byte a[];
+                        byte b[];
+
+                        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                        outputStream.write(SendData_Str.getBytes());
+                        outputStream.write(filePacketBytes);
+                        combined = outputStream.toByteArray();
+                        this.log("Sending" + SendData_Str);
+                        this.log(ip_addr.toString());
+                        DatagramPacket sendPacket = new DatagramPacket(combined, combined.length, ip_addr, SERVER_PORT_2);
+                        sentPackets.add(combined);
+
+                        if(Math.random() > PROBABILITY){
+                            
+                            this.socket.send(sendPacket);
+                            this.log("Packet sent");
+                        }
+                        else{
+                        
+                            System.out.println("[X] Lost packet with sequence number " + rcvBase);
+                        }
+                           rcvBase++;
+                    }
+                }
+
+                    byte[] ackBytes = new byte[NumBytes];
+                    DatagramPacket ack = new DatagramPacket(ackBytes, ackBytes.length);
+                        
+                    try{
+                        // If an ACK was not received in the time specified (continues on the catch clausule)
+                        this.log("Start Timer");
+                        this.socket.setSoTimeout(TIMER);
+                        // Receive the packet
+                        this.socket.receive(ack);
+                        String receivedStr = new String(ack.getData());
+                        String[] tokens = receivedStr.split("\\s+");
+                        this.log("Received_Data "+ receivedStr);
+                        int ackNum = Integer.parseInt(tokens[1].trim());
+                        // If this ack is for the last packet, stop the sender 
+                        if(ackNum == numPackets){
+                            break;
+                        }
+
+                        firstUnAcked = Math.max(firstUnAcked, ackNum);
+                            
+                        }catch(SocketTimeoutException e){
+                            this.log("Timer Expired");
+                            // then send all the sent but non-acked packets
+                            for(int i = firstUnAcked; i < rcvBase; i++){
+                                byte[] sendData = sentPackets.get(i);
+                                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, ip_addr, SERVER_PORT_2);
+
+                                if(Math.random() > PROBABILITY){
+
+                                    this.socket.send(sendPacket);
+                                }
+                                else{
+                                    this.log("[X] Lost packet with sequence number " + i);
+                                }
+
+                            }
+                        }
+
+            }
+            String endStr = "END";
+            byte[] endBytes = endStr.getBytes();
+            DatagramPacket sendPacket = new DatagramPacket(endBytes, endBytes.length, ip_addr, SERVER_PORT_2);
+            this.log("Finished transmission");
+        } 
 }

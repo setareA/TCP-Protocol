@@ -3,7 +3,7 @@ import java.net.DatagramPacket;
 
 public class Receiver {
     public static void main(String[] args) throws Exception {
-        TCPServerSocket tcpServerSocket = new TCPServerSocketImpl(8888);
+        TCPServerSocket tcpServerSocket = new TCPServerSocketImpl(1239);
         TCPSocket tcpSocket = tcpServerSocket.accept();
         tcpSocket.receive("receiving.mp3");
         tcpSocket.close();
